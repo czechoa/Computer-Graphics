@@ -35,7 +35,6 @@ class Wireframe:
         return (meanX, meanY, meanZ)
 
 
-
     def transform(self, matrix):
         """ Apply a transformation defined by a given matrix. """
         self.nodes = np.dot(self.nodes, matrix)

@@ -68,11 +68,11 @@ class ProjectionViewer:
         """ Draw the wireframes on the screen. """
 
         self.screen.fill(self.background)
-        # self.displayEdges = False
+        self.displayEdges = False
         for wireframe in self.wireframes.values():
 
             if self.displayNodes:
-                for node in wireframe.nodes:
+                for i,node in enumerate(wireframe.nodes):
                     # pygame.draw.circle(self.screen, self.nodeColour, (int(node[0]), int(node[1])), self.nodeRadius, 0)
                     point_x = (int(node[0] * self.d) / (node[2] + self.d) + self.width / 2)
                     point_y = (int(node[1] * self.d) / (node[2] +  self.d) + self.height / 2)
