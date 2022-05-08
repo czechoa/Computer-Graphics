@@ -12,7 +12,7 @@ class Wireframe:
         ones_column = np.ones((len(node_array), 1))
         ones_added = np.hstack((node_array, ones_column))
         self.nodes = np.vstack((self.nodes, ones_added))
-        self.nodes_2d_throw = self.nodes[:, :2]
+        self.nodes_2d_throw = self.nodes[:, :2].copy()
 
     def addEdges(self, edgeList):
         self.edges += edgeList
@@ -39,6 +39,10 @@ class Wireframe:
         """ Apply a transformation defined by a given matrix. """
         self.nodes = np.dot(self.nodes, matrix)
 
+    def transform_throw(self, matrix):
+        """ Apply a transformation defined by a given matrix. """
+        self.nodes_2d_throw = np.dot(self.nodes_2d_throw, matrix)
+
     def scale(self,sx=0, sy=0, sz=0):
         """ Return matrix for scaling equally along all axes centred on the point (cx,cy,cz). """
 
@@ -55,18 +59,18 @@ class Wireframe:
     def rotateZ(self,theta=1):
         self.transform(rotateZMatrix(theta))
 
-if __name__ == "__main__":
-    cube = Wireframe()
-    cube_nodes = [(x,y,z) for x in (0,1) for y in (0,1) for z in (0,1)]
-    cube.addNodes(np.array(cube_nodes))
-
-    cube.addEdges([(n,n+4) for n in range(0,4)])
-    cube.addEdges([(n,n+1) for n in range(0,8,2)])
-    cube.addEdges([(n,n+2) for n in (0,1,4,5)])
-
-    cube.findCentre()
-    cube.outputNodes()
-    cube.outputEdges()
+# if __name__ == "__main__":
+#     cube = Wireframe()
+#     cube_nodes = [(x,y,z) for x in (0,1) for y in (0,1) for z in (0,1)]
+#     cube.addNodes(np.array(cube_nodes))
+#
+#     cube.addEdges([(n,n+4) for n in range(0,4)])
+#     cube.addEdges([(n,n+1) for n in range(0,8,2)])
+#     cube.addEdges([(n,n+2) for n in (0,1,4,5)])
+#
+#     cube.findCentre()
+#     cube.outputNodes()
+#     cube.outputEdges()
 
 
 def translationMatrix(dx=0, dy=0, dz=0):
@@ -83,8 +87,8 @@ def rotateXMatrix(radians):
     c = np.cos(radians)
     s = np.sin(radians)
     return np.array([[1, 0, 0, 0],
-                     [0, c, -s, 0],
-                     [0, s, c, 0],
+                     [0, c, s, 0],
+                     [0, -s, c, 0],
                      [0, 0, 0, 1]])
 
 def rotateYMatrix(radians):
@@ -92,9 +96,9 @@ def rotateYMatrix(radians):
 
     c = np.cos(radians)
     s = np.sin(radians)
-    return np.array([[c, 0, s, 0],
+    return np.array([[c, 0, -s, 0],
                      [0, 1, 0, 0],
-                     [-s, 0, c, 0],
+                     [s, 0, c, 0],
                      [0, 0, 0, 1]])
 
 def rotateZMatrix(radians):
