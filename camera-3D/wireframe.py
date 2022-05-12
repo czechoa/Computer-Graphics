@@ -8,6 +8,7 @@ class Wireframe:
         self.edges = []
 
 
+
     def addNodes(self, node_array):
         ones_column = np.ones((len(node_array), 1))
         ones_added = np.hstack((node_array, ones_column))
@@ -36,19 +37,16 @@ class Wireframe:
 
 
     def transform(self, matrix):
-        """ Apply a transformation defined by a given matrix. """
         self.nodes = np.dot(self.nodes, matrix)
 
     def transform_throw(self, matrix):
-        """ Apply a transformation defined by a given matrix. """
         self.nodes_2d_throw = np.dot(self.nodes_2d_throw, matrix)
 
-    def scale(self,sx=0, sy=0, sz=0):
-        """ Return matrix for scaling equally along all axes centred on the point (cx,cy,cz). """
+    def scale(self,scale):
 
-        matrix = scaleMatrix(sx,sy,sz)
-
+        matrix = scaleMatrix(scale)
         self.transform(matrix)
+
 
     def rotateX(self,theta=1):
         self.transform(rotateXMatrix(theta))
@@ -74,16 +72,12 @@ class Wireframe:
 
 
 def translationMatrix(dx=0, dy=0, dz=0):
-    """ Return matrix for translation along vector (dx, dy, dz). """
-
     return np.array([[1, 0, 0, 0],
                      [0, 1, 0, 0],
                      [0, 0, 1, 0],
                      [dx, dy, dz, 1]])
 
 def rotateXMatrix(radians):
-    """ Return matrix for rotating about the x-axis by 'radians' radians """
-
     c = np.cos(radians)
     s = np.sin(radians)
     return np.array([[1, 0, 0, 0],
@@ -92,18 +86,14 @@ def rotateXMatrix(radians):
                      [0, 0, 0, 1]])
 
 def rotateYMatrix(radians):
-    """ Return matrix for rotating about the y-axis by 'radians' radians """
-
     c = np.cos(radians)
     s = np.sin(radians)
-    return np.array([[c, 0, -s, 0],
+    return np.array([[c, 0, s, 0],
                      [0, 1, 0, 0],
-                     [s, 0, c, 0],
+                     [-s, 0, c, 0],
                      [0, 0, 0, 1]])
 
 def rotateZMatrix(radians):
-    """ Return matrix for rotating about the z-axis by 'radians' radians """
-
     c = np.cos(radians)
     s = np.sin(radians)
     return np.array([[c, -s, 0, 0],
@@ -111,11 +101,12 @@ def rotateZMatrix(radians):
                      [0, 0, 1, 0],
                      [0, 0, 0, 1]])
 
-def scaleMatrix(sx=0, sy=0, sz=0):
-    """ Return matrix for scaling equally along all axes centred on the point (cx,cy,cz). """
-
-    return np.array([[sx, 0, 0, 0],
-                     [0, sy, 0, 0],
-                     [0, 0, sz, 0],
-                     [0, 0, 0, 1]])
+def scaleMatrix(z):
+    zoom = 1 /(1-z)
+    zoom_1 = -z/(1-z)
+    return np.array([[1, 0, 0, 0],
+                     [0, 1, 0, 0],
+                     [0, 0, zoom,1],
+                     [0, 0, zoom_1, 0]]
+                    )
 

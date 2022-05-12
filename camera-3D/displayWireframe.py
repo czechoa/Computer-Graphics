@@ -18,12 +18,12 @@ key_to_function = {
     pygame.K_k: (lambda x: x.translateAll([0, 0, 10])),
     pygame.K_l: (lambda x: x.translateAll([0, 0, -10])),
 
-    pygame.K_EQUALS: (lambda x: x.scaleAll(1.25)),
-    pygame.K_MINUS: (lambda x: x.scaleAll(0.8)),
+    pygame.K_EQUALS: (lambda x: x.scaleAll(1.5)),
+    pygame.K_MINUS: (lambda x: x.scaleAll(1/1.5)),
     pygame.K_q: (lambda x: x.rotateAll('X', 0.05)),
     pygame.K_w: (lambda x: x.rotateAll('X', -0.05)),
-    pygame.K_a: (lambda x: x.rotateAll('Y', 0.05)),
-    pygame.K_s: (lambda x: x.rotateAll('Y', -0.05)),
+    pygame.K_a: (lambda x: x.rotateAll('Y', -0.05)),
+    pygame.K_s: (lambda x: x.rotateAll('Y', 0.05)),
     pygame.K_z: (lambda x: x.rotateAll('Z', 0.05)),
     pygame.K_x: (lambda x: x.rotateAll('Z', -0.05))}
 
@@ -52,6 +52,7 @@ class ProjectionViewer:
         self.nodeColour = (255, 255, 255)
         self.edgeColour = (200, 200, 200)
         self.nodeRadius = 4
+        self.zoom = 1
 
     def addWireframe(self, name, wireframe):
         """ Add a named wireframe object. """
@@ -88,10 +89,10 @@ class ProjectionViewer:
                 for i,node in enumerate(wireframe.nodes):
                     # pygame.draw.circle(self.screen, self.nodeColour, (int(node[0]), int(node[1])), self.nodeRadius, 0)
                     if node[2] > 0:
-                        point_x = (int(node[0] * self.d) / (node[2]) +self.width/2)
-                        point_y = (int(node[1] * self.d) / (node[2]) + self.height/2)
+                        point_x = (int(node[0] * self.d) / (node[2])*self.zoom +self.width/2)
+                        point_y = (int(node[1] * self.d) / (node[2] )*self.zoom + self.height/2)
                         wireframe.nodes_2d_throw[i] = (point_x,point_y)
-                        pygame.draw.circle(self.screen, self.nodeColour, (point_x,point_y) , self.nodeRadius, 0)
+                        pygame.draw.circle(self.screen, self.nodeColour, (point_x,point_y)  , self.nodeRadius, 0)
 
                 # matrix = wf.translationMatrix(*[self.width/2,self.height/2,0])
                 # wireframe.transform_throw(matrix)
@@ -101,24 +102,19 @@ class ProjectionViewer:
                                            1)
 
     def translateAll(self, vector):
-        """ Translate all wireframes along a given axis by d units. """
         matrix = wf.translationMatrix(*vector)
 
         for wireframe in self.wireframes.values():
             wireframe.transform(matrix)
 
     def scaleAll(self, scale):
-        """ Scale all wireframes by a given scale, centred on the centre of the screen. """
-
-        centre_x = self.width / 2
-        centre_y = self.height / 2
-
-        for wireframe in self.wireframes.values():
-            wireframe.scale(scale, scale, scale)
+        if scale > 1:
+            self.zoom *= scale
+        else:
+            if self.zoom !=1:
+                self.zoom *= scale
 
     def rotateAll(self, axis, theta):
-        """ Rotate all wireframe about their centre, along a given axis by a given angle. """
-
         rotateFunction = 'rotate' + axis
 
         for wireframe in self.wireframes.values():
