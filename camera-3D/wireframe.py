@@ -8,7 +8,7 @@ class Wireframe:
         self.edges = []
         self.walls = np.zeros((0, 4))
         self.walls_z = np.zeros((0, 4))
-        self.walls_x_y_norm =  np.zeros((0, 4))
+        # self.walls_x_y_norm =  np.zeros((0, 4))
         self.walls_colors = np.zeros((0, 3))
 
     def addNodes(self, node_array):
@@ -17,12 +17,15 @@ class Wireframe:
         self.nodes = np.vstack((self.nodes, ones_added))
         self.nodes_2d_throw = self.nodes[:, :2].copy()
 
+
     def addEdges(self, edgeList):
         self.edges += edgeList
 
     def update_wall_z_and_x_Y_norm(self):
         self.walls_z = self.nodes[self.walls, 2]
-        self.walls_x_y_norm = np.linalg.norm(self.nodes[self.walls, :3], axis=2)
+        # self.walls_x_y_norm = np.linalg.norm(self.nodes[self.walls, :3], axis=2)
+        # self.walls_x_y_norm = np.linalg.norm(self.nodes[self.walls, :3], axis=2)
+
 
     def add_walls(self, wallList, colors):
         self.walls = np.array(wallList)
@@ -32,20 +35,22 @@ class Wireframe:
     def sort_by_z_walls(self):
 
         self.walls_z = np.sort(self.walls_z, axis=1,kind='stable')
-        self.walls_x_y_norm = np.sort(self.walls_x_y_norm, axis=1,kind='stable')
+        # self.walls_x_y_norm = np.sort(self.walls_x_y_norm, axis=1,kind='stable')
+        planes = [calculate_equation_of_plane(*x) for x in self.nodes[self.walls[:, :3]][:, :, :3]]
 
-        to_sort = np.hstack((self.walls_x_y_norm, self.walls_z))
-        sorted_index = np.lexsort([to_sort[:, -i] for i in reversed(range(1,9))] )[::-1]
+        # nodes_and_000_point = np.vstack((self.nodes,(0,0,0,1)))
+        points_behind_wall = -1*calculate_points_behind(planes[:], self.nodes).sum(axis=1)
+        points_behind_wall += calculate_points_behind(planes[:], np.array((0,0,0,1)) )
+
+        to_sort = np.hstack((points_behind_wall.reshape(-1,1), self.walls_z))
+
+        sorted_index = np.lexsort([to_sort[:, -i] for i in reversed(range(1,to_sort.shape[1] +1))] )[::-1]
 
         self.walls = self.walls[sorted_index]
         self.walls_z = self.walls_z[sorted_index]
-        self.walls_x_y_norm = self.walls_x_y_norm[sorted_index]
         self.walls_colors = self.walls_colors[sorted_index]
-        # print('po sortowaniu')
-        # print(sorted_index)
-        # print(self.walls)
-        # print(self.walls_z)
-        # print(to_sort[sorted_index])
+        print(self.walls)
+        print(to_sort[sorted_index])
 
     def outputNodes(self):
 
@@ -72,11 +77,6 @@ class Wireframe:
     def transform_throw(self, matrix):
         self.nodes_2d_throw = np.dot(self.nodes_2d_throw, matrix)
 
-    # def scale(self,scale):
-    #
-    #     matrix = scaleMatrix(scale)
-    #     self.transform(matrix)
-
     def rotateX(self, theta=1):
         self.transform(rotateXMatrix(theta))
 
@@ -86,6 +86,26 @@ class Wireframe:
     def rotateZ(self, theta=1):
         self.transform(rotateZMatrix(theta))
 
+
+
+def calculate_equation_of_plane(p1,p2,p3):
+    # These two vectors are in the plane
+    v1 = p3 - p1
+    v2 = p2 - p1
+
+    # the cross product is a vector normal to the plane
+    cp = np.cross(v1, v2)
+
+    a, b, c = cp
+    # This evaluates a * x3 + b * y3 + c * z3 which equals d
+    d = -np.dot(cp, p3)
+    return  a,b,c,d
+
+def calculate_points_behind(plane, points):
+    return  np.dot(plane,points.T) > 0
+
+def calculate_points_forward(plane, points):
+    return  np.dot(plane,points.T) < 0
 
 if __name__ == "__main__":
     cube = Wireframe()
@@ -97,18 +117,30 @@ if __name__ == "__main__":
         [(n, n + 4) for n in range(0, 4)] + [(n, n + 1) for n in range(0, 8, 2)] + [(n, n + 2) for n in (0, 1, 4, 5)])
 
     cube.add_walls(
-        [[0, 4, 6, 2],
-         [1, 5, 7, 3],
-         [7, 3, 2, 6],
-         [0, 1, 5, 4],
-         [1, 0, 2, 3],
-         [7, 6, 4, 5]], colors= np.zeros((6,3))
-    )
-    cube.sort_by_z_walls()
-    cube.sort_by_z_walls()
+        [[0, 2, 6, 4],# PRZEDNIA
+         [1, 3, 7, 5], # TYLNIA
 
-    # cube.outputNodes()
-    # cube.outputEdges()
+         [2, 6, 7, 3], # DOLNA
+         [0, 4, 5, 1], # GORNA
+
+         [1, 3, 2, 0],  # LEWA
+         [7, 6, 4, 5] # PRAWA
+         ], colors= np.zeros((6,3))
+    )
+    # print(cube.nodes[cube.walls[0]][:3,:3])
+    # print(cube.nodes[cube.walls[:5,:3]][:,:,1])
+
+    # print(calculate_equation_of_plane(*cube.nodes[cube.walls[:5,:3]][:,:,:3]))
+    # print('\n')
+    print('sing')
+    cube.sort_by_z_walls()
+    # planes = [ calculate_equation_of_plane(*x) for x in cube.nodes[cube.walls[:,:3]][:,:,:3]]
+
+
+    # points_behind  = calculate_points_behind(planes[:],cube.nodes[:]).sum(axis=1)
+    # print(points_behind.reshape(-1,1))
+
+    # cube.sort_by_z_walls()
 
 
 def translationMatrix(dx=0, dy=0, dz=0):
@@ -144,11 +176,7 @@ def rotateZMatrix(radians):
                      [0, 0, 1, 0],
                      [0, 0, 0, 1]])
 
-# def scaleMatrix(z):
-#     zoom = 1 /(1-z)
-#     zoom_1 = -z/(1-z)
-#     return np.array([[1, 0, 0, 0],
-#                      [0, 1, 0, 0],
-#                      [0, 0, zoom,1],
-#                      [0, 0, zoom_1, 0]]
-#                     )
+def PolyArea(x,y):
+    return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
+
+

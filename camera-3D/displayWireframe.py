@@ -87,16 +87,17 @@ class ProjectionViewer:
         """ Draw the wireframes on the screen. """
 
         self.screen.fill(self.background)
-        self.displayEdges = False
+        self.displayEdges = True
+        self.displayWalls = True
+
         for wireframe in self.wireframes.values():
             if self.displayNodes:
                 for i, node in enumerate(wireframe.nodes):
-                    # pygame.draw.circle(self.screen, self.nodeColour, (int(node[0]), int(node[1])), self.nodeRadius, 0)
                     if node[2] > 0:
                         point_x = (int(node[0] * self.d) / (node[2]) * self.zoom + self.width / 2)
                         point_y = (int(node[1] * self.d) / (node[2]) * self.zoom + self.height / 2)
                         wireframe.nodes_2d_throw[i] = (point_x, point_y)
-                        # pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
+                        pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
 
                 if self.displayEdges:
                     for n1, n2 in wireframe.edges:
@@ -152,14 +153,20 @@ if __name__ == '__main__':
         [(n, n + 4) for n in range(0, 4)] + [(n, n + 1) for n in range(0, 8, 2)] + [(n, n + 2) for n in (0, 1, 4, 5)])
 
     cube.add_walls(
-        [[0, 4, 6, 2],
-         [1, 5, 7, 3],
-         [7, 3, 2, 6],
-         [0, 1, 5, 4],
-         [1, 0, 2, 3],
-         [7, 6, 4, 5]], colors=  [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+        [[0, 2, 6, 4],  # PRZEDNIA
+         [1, 3, 7, 5],  # TYLNIA
+
+         [2, 6, 7, 3],  # DOLNA
+         [0, 4, 5, 1],  # gORNA
+
+         [1, 3, 2, 0],  # LEWA
+         [7, 6, 4, 5]  # PRAWA
+         ],
+        colors=  [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
     )
+
 
     pv.addWireframe(f'cube', cube)
 
     pv.run()
+
