@@ -1,8 +1,9 @@
 import math
-
+import time
 import wireframe as wf
 import pygame
 import numpy as np
+from matrix import translationMatrix
 from pprint import pprint
 
 key_to_function = {
@@ -53,7 +54,7 @@ class ProjectionViewer:
         self.nodeColour = (255, 255, 255)
         self.edgeColour = (200, 200, 200)
         self.wallColours = [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255),
-                           (255, 0, 255), (0, 128, 128), (128, 0, 128)]
+                            (255, 0, 255), (0, 128, 128), (128, 0, 128)]
 
         self.nodeRadius = 4
         self.zoom = 1
@@ -76,10 +77,11 @@ class ProjectionViewer:
                         key_to_function[event.key](self)
 
                         # print(self.wireframes['cube'].nodes)
-
+            # start =time.time()
             self.display()
-            for i, text in enumerate(self.texts):
-                self.screen.blit(text, (0, self.font_size * i))
+            # print('time display', time.time() -start)
+            # for i, text in enumerate(self.texts):
+            #     self.screen.blit(text, (0, self.font_size * i))
 
             pygame.display.flip()
 
@@ -87,55 +89,74 @@ class ProjectionViewer:
         """ Draw the wireframes on the screen. """
 
         self.screen.fill(self.background)
-        self.displayEdges = True
+        self.displayEdges = False
+        self.displayNodes = False
         self.displayWalls = True
 
         for wireframe in self.wireframes.values():
-            if self.displayNodes:
-                for i, node in enumerate(wireframe.nodes):
-                    if node[2] > 0:
-                        point_x = (int(node[0] * self.d) / (node[2]) * self.zoom + self.width / 2)
-                        point_y = (int(node[1] * self.d) / (node[2]) * self.zoom + self.height / 2)
-                        wireframe.nodes_2d_throw[i] = (point_x, point_y)
-                        pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
+            for i, node in enumerate(wireframe.nodes):
+                if node[2] > 0:
+                    point_x = int(node[0] * self.d / node[2]) + self.width / 2
+                    point_y = int(node[1] * self.d / node[2]) + self.height / 2
+                    wireframe.nodes_2d_throw[i] = (point_x, point_y)
+                else:
+                    point_x = int(node[0] * self.d) + self.width / 2
+                    point_y = int(node[1] * self.d) + self.height / 2
+                    if point_x > self.width:
+                        point_x = self.width
 
-                if self.displayEdges:
-                    for n1, n2 in wireframe.edges:
-                        pygame.draw.aaline(self.screen, self.edgeColour, wireframe.nodes_2d_throw[n1][:2],
-                                           wireframe.nodes_2d_throw[n2][:2], 1)
+                    if point_y > self.height:
+                        point_y = self.height
 
-                        self.screen.blit(self.my_font.render(str(n1), False, (200, 0, 0)),
-                                         (wireframe.nodes_2d_throw[n1][:2]))
-                        self.screen.blit(self.my_font.render(str(n2), False, (200, 0, 0)),
-                                         (wireframe.nodes_2d_throw[n2][:2]))
-                if self.displayWalls:
-                    for id_color, wall in enumerate(wireframe.walls):
+                if self.displayNodes:
+                    pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
+
+            if self.displayEdges:
+                for n1, n2 in wireframe.edges:
+                    pygame.draw.aaline(self.screen, self.edgeColour, wireframe.nodes_2d_throw[n1][:2],
+                                       wireframe.nodes_2d_throw[n2][:2], 1)
+
+                    self.screen.blit(self.my_font.render(str(n1), False, (200, 0, 0)),
+                                     (wireframe.nodes_2d_throw[n1][:2]))
+                    self.screen.blit(self.my_font.render(str(n2), False, (200, 0, 0)),
+                                     (wireframe.nodes_2d_throw[n2][:2]))
+
+            if self.displayWalls:
+                # new = time.time()
+
+                for id_color, wall in enumerate(wireframe.walls):
+                    # print( wireframe.nodes_2d_throw[wall,:2])
+                    if np.all(wireframe.walls_z[id_color] < 0):
+                        continue
+                    if np.all(abs(wireframe.nodes_2d_throw[wall][:, 0]) > self.width) and np.all(
+                            abs(wireframe.nodes_2d_throw[wall][:, 1]) > self.height):
+                        continue
+                    # else:
+                    #     print('za obrazem kamery')
+                    else:
+                        # print(wireframe.walls_z[id_color])
                         pygame.draw.polygon(self.screen, wireframe.walls_colors[id_color],
-                                            wireframe.nodes_2d_throw[wall,:2])
+                                            wireframe.nodes_2d_throw[wall])
+                # print(time.time() - new)
 
-                        # pygame.draw.polygon(self.screen, self.wallColour,
-                        #                     [wireframe.nodes_2d_throw[i][:2] for i in wall])
+                # pygame.draw.polygon(self.screen, self.wallColour,
+                #                     [wireframe.nodes_2d_throw[i][:2] for i in wall])
+        pygame.draw.circle(self.screen, (255, 255, 255), (self.width / 2, self.height / 2), self.nodeRadius, 0)
 
     def translateAll(self, vector):
-        matrix = wf.translationMatrix(*vector)
+        matrix = translationMatrix(*vector)
 
         for wireframe in self.wireframes.values():
             wireframe.transform(matrix)
 
     def scaleAll(self, scale):
-        if scale > 1:
-            self.zoom *= scale
-        else:
-            if self.zoom != 1:
-                self.zoom *= scale
+        self.d *= scale
 
     def rotateAll(self, axis, theta):
         rotateFunction = 'rotate' + axis
 
         for wireframe in self.wireframes.values():
-            # centre = wireframe.findCentre()
             getattr(wireframe, rotateFunction)(theta)
-            # self.translateAll([self.width/2,self.height/2,0])
 
 
 if __name__ == '__main__':
@@ -145,26 +166,42 @@ if __name__ == '__main__':
     pv = ProjectionViewer(height, width)
     cube = wf.Wireframe()
     cube_nodes = [(x, y, z) for x in (50, 250) for y in (50, 250) for z in (50, 250)]
-
-
+    cube_nodes.extend([(-x, y, z) for x in (50, 250) for y in (50, 250) for z in (50, 250)])
     cube.addNodes(np.array(cube_nodes))
 
     cube.addEdges(
-        [(n, n + 4) for n in range(0, 4)] + [(n, n + 1) for n in range(0, 8, 2)] + [(n, n + 2) for n in (0, 1, 4, 5)])
+        [(n, n + 4) for n in range(0, 4)] + [(n, n + 1) for n in range(0, 8, 2)] + [(n, n + 2) for n in (0, 1, 4, 5)]
 
-    cube.add_walls(
-        [[0, 2, 6, 4],  # PRZEDNIA
-         [1, 3, 7, 5],  # TYLNIA
-
-         [2, 6, 7, 3],  # DOLNA
-         [0, 4, 5, 1],  # gORNA
-
-         [1, 3, 2, 0],  # LEWA
-         [7, 6, 4, 5]  # PRAWA
-         ],
-        colors=  [(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
     )
 
+    walls_0 = np.array([[0, 2, 6, 4],  # PRZEDNIA
+             [3, 1, 5, 7],  # TYLNIA
+
+             [2, 6, 7, 3],  # DOLNA
+             [0, 4, 5, 1],  # gORNA
+
+             [1, 3, 2, 0],  # LEWA
+             [6, 7, 5, 4]  # PRAWA
+             ])
+    walls_1 = walls_0 + 8
+    walls = np.vstack( (walls_0,walls_1))
+
+    cube.add_walls(
+        # [[0, 2, 6, 4],  # PRZEDNIA
+        #  [3, 1, 5, 7],  # TYLNIA
+        #
+        #  [2, 6, 7, 3],  # DOLNA
+        #  [0, 4, 5, 1],  # gORNA
+        #
+        #  [1, 3, 2, 0],  # LEWA
+        #  [6, 7, 5, 4]  # PRAWA
+        #
+        #  ],
+        walls,
+        # colors=[(255, 0, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+        colors = [ (x,z,y) for x in (0,125, 250) for y in (125, 250) for z in (0, 250)]
+
+    )
 
     pv.addWireframe(f'cube', cube)
 
