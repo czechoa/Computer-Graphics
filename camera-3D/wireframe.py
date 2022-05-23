@@ -1,5 +1,5 @@
 import numpy as np
-from matrix import projection_2d_matrix, normalization_2d_matrix, rotateXMatrix, rotateYMatrix, rotateZMatrix
+from matrix import rotateXMatrix, rotateYMatrix, rotateZMatrix
 from equation_of_plane import calculate_equation_of_plane, calculate_points_behind, calculate_points_forward
 
 
@@ -31,28 +31,22 @@ class Wireframe:
 
     def painter_algorithm(self):
 
-
         self.walls_z = np.sort(self.walls_z, axis=1, kind='stable')
         #
         planes = np.array([calculate_equation_of_plane(*x) for x in self.nodes[self.walls[:, :3]][:, :, :3]], ).reshape(
             (len(self.walls), 4))
         #
-        points_behind_wall =  -1*np.array(
+        points_behind_wall = -1 * np.array(
             [calculate_points_behind(plane.reshape(1, 4), self.nodes).sum() if calculate_points_forward(plane, np.array(
                 (0, 0, 0, 1)))
              else calculate_points_forward(plane.reshape(1, 4), self.nodes).sum() for plane in planes])
 
-
-        #
-        # check_calculate_equation_of_plane(planes, self.nodes)
-        #
         to_sort = np.hstack((self.walls_z, points_behind_wall.reshape(-1, 1)))
-        # to_sort = self.walls_z
 
         sorted_index = np.lexsort([to_sort[:, -i] for i in reversed(range(1, to_sort.shape[1] + 1))])[::-1]
         #
         self.order_walls(sorted_index)
-        self.bubble_sort(points_behind_wall[sorted_index])
+        self.bubble_sort()
 
     def order_walls(self, sorted_index):
         self.walls = self.walls[sorted_index]
@@ -72,15 +66,6 @@ class Wireframe:
             print("Edge %d: (%.3f, %.3f, %.3f)" % (i, node1[0], node1[1], node1[2]))
             print("to (%.3f, %.3f, %.3f)" % (node2[0], node2[1], node2[2]))
 
-    def projection_2d(self, d):
-        mrp2 = projection_2d_matrix(d)
-        vector_2d = np.dot(self.nodes, mrp2)
-
-        normalization_matrix = normalization_2d_matrix(d, self.nodes[2])
-
-        self.nodes_2d_throw = np.dot(vector_2d, normalization_matrix)
-
-
     def transform(self, matrix):
         self.nodes = np.dot(self.nodes, matrix)
 
@@ -99,31 +84,7 @@ class Wireframe:
     def rotateZ(self, theta=1):
         self.transform(rotateZMatrix(theta))
 
-    def wall_order(self):
-        for i in range(len(self.walls) - 1):
-            wall = self.walls[i]
-            print(i, wall)
-
-            for z in range(i+1,len(self.walls)):
-                wall_next = self.walls[z].copy()
-
-                plane = np.array(calculate_equation_of_plane(*self.nodes[wall[:3]][:, :3]))
-                plane_next = np.array(calculate_equation_of_plane(*self.nodes[wall_next[:3]][:, :3]))
-                if calculate_points_forward(plane, np.array((0, 0, 0, 1))):
-                    points_behind = calculate_points_behind(plane.reshape(1, 4) ,self.nodes[wall_next]).sum()
-                else:
-                    points_behind = calculate_points_forward(plane.reshape(1, 4), self.nodes[wall_next]).sum()
-                print(points_behind)
-                if points_behind > 0:
-                    self.walls[z] = self.walls[i]
-                    self.walls[i] = wall_next
-                    tmp_color = self.walls_colors[i].copy()
-                    self.walls_colors[i] = self.walls_colors[z]
-                    self.walls_colors[z] = tmp_color
-                    break
-
-
-    def bubble_sort(self,points_behind_wall):
+    def bubble_sort(self):
         n = len(self.walls)
         for i in range(n):
 
@@ -132,24 +93,23 @@ class Wireframe:
             for j in range(n - i - 1):
 
                 wall = self.walls[j]
-                wall_next = self.walls[j+1].copy()
+                wall_next = self.walls[j + 1].copy()
                 plane = np.array(calculate_equation_of_plane(*self.nodes[wall[:3]][:, :3]))
 
                 if calculate_points_forward(plane, np.array((0, 0, 0, 1))):
-                    points_behind = calculate_points_behind(plane.reshape(1, 4) ,self.nodes[wall_next]).sum()
+                    points_behind = calculate_points_behind(plane.reshape(1, 4), self.nodes[wall_next]).sum()
                 else:
                     points_behind = calculate_points_forward(plane.reshape(1, 4), self.nodes[wall_next]).sum()
 
                 if points_behind > 0:
                     self.walls[j], self.walls[j + 1] = self.walls[j + 1].copy(), self.walls[j].copy()
-                    self.walls_colors[j], self.walls_colors[j + 1] = self.walls_colors[j + 1].copy(), self.walls_colors[j].copy()
+                    self.walls_colors[j], self.walls_colors[j + 1] = self.walls_colors[j + 1].copy(), self.walls_colors[
+                        j].copy()
                     already_sorted = False
 
             if already_sorted:
                 break
 
-    # def counter_walls_behind(self, ):
-    #     _
 
 if __name__ == "__main__":
     cube = Wireframe()
@@ -178,26 +138,3 @@ if __name__ == "__main__":
         walls,
         colors=[(x, z, y) for x in (0, 125, 250) for y in (125, 250) for z in (0, 250)]
     )
-    # planes = np.array([calculate_equation_of_plane(*x) for x in cube.nodes[cube.walls[:, :3]][:, :, :3]], ).reshape(
-    #     (len(cube.walls), 4))
-
-    # for i,plane in enumerate(planes):
-    #     wall = cube.walls[i]
-    #     wall_next = cube.walls[i+1]
-    #     if plane
-    # for i in range(len(walls) -1):
-    #     # print(walls)
-    #     # print('\n')
-    #     wall = walls[i]
-    #     plane = np.array(calculate_equation_of_plane( *cube.nodes[wall[:3]][:,:3]))
-    #
-    #     wall_next = walls[i+1].copy()
-    #     if calculate_points_forward(plane, np.array(( 0, 0, 0,1))):
-    #         points_behind = calculate_points_behind(plane.reshape(1, 4), cube.nodes[wall_next]).sum()
-    #     else:
-    #         points_behind = calculate_points_forward(plane.reshape(1, 4), cube.nodes).sum()
-    #     if points_behind > 0:
-    #         walls[i+1] = walls[i]
-    #         walls[i] = wall_next
-
-
