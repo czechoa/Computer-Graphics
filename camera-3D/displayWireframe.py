@@ -7,11 +7,6 @@ from matrix import translationMatrix
 from pprint import pprint
 
 key_to_function = {
-    # pygame.K_LEFT:   (lambda x: x.translateAll('x', -10)),
-    # pygame.K_RIGHT:  (lambda x: x.translateAll('x',  10)),
-    # pygame.K_DOWN:   (lambda x: x.translateAll('y',  10)),
-    # pygame.K_UP:     (lambda x: x.translateAll('y', -10)),
-
     pygame.K_LEFT: (lambda x: x.translateAll([10, 0, 0])),
     pygame.K_RIGHT: (lambda x: x.translateAll([-10, 0, 0])),
     pygame.K_DOWN: (lambda x: x.translateAll([0, -10, 0])),
@@ -69,6 +64,8 @@ class ProjectionViewer:
 
         running = True
         while running:
+            start =time.time()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -77,13 +74,12 @@ class ProjectionViewer:
                         key_to_function[event.key](self)
 
                         # print(self.wireframes['cube'].nodes)
-            # start =time.time()
             self.display()
-            # print('time display', time.time() -start)
             # for i, text in enumerate(self.texts):
             #     self.screen.blit(text, (0, self.font_size * i))
 
             pygame.display.flip()
+            # print('time display', time.time() -start)
 
     def display(self):
         """ Draw the wireframes on the screen. """
@@ -98,15 +94,13 @@ class ProjectionViewer:
                 if node[2] > 0:
                     point_x = int(node[0] * self.d / node[2]) + self.width / 2
                     point_y = int(node[1] * self.d / node[2]) + self.height / 2
-                    wireframe.nodes_2d_throw[i] = (point_x, point_y)
                 else:
                     point_x = int(node[0] * self.d) + self.width / 2
                     point_y = int(node[1] * self.d) + self.height / 2
-                    if point_x > self.width:
-                        point_x = self.width
 
-                    if point_y > self.height:
-                        point_y = self.height
+                point_x,point_y = self.set_max_x_y_values(point_x,point_y)
+
+                wireframe.nodes_2d_throw[i] = (point_x, point_y)
 
                 if self.displayNodes:
                     pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
@@ -123,25 +117,39 @@ class ProjectionViewer:
 
             if self.displayWalls:
                 # new = time.time()
-
+                displays_walls = 0
                 for id_color, wall in enumerate(wireframe.walls):
-                    # print( wireframe.nodes_2d_throw[wall,:2])
-                    if np.all(wireframe.walls_z[id_color] < 0):
-                        continue
-                    if np.all(abs(wireframe.nodes_2d_throw[wall][:, 0]) > self.width) and np.all(
-                            abs(wireframe.nodes_2d_throw[wall][:, 1]) > self.height):
-                        continue
-                    # else:
-                    #     print('za obrazem kamery')
-                    else:
-                        # print(wireframe.walls_z[id_color])
+                    if self.check_to_display_wall( wireframe.walls_z[id_color],wireframe.nodes_2d_throw[wall]):
+                        displays_walls +=1
                         pygame.draw.polygon(self.screen, wireframe.walls_colors[id_color],
-                                            wireframe.nodes_2d_throw[wall])
-                # print(time.time() - new)
+                                                wireframe.nodes_2d_throw[wall])
+                # print(time.time() - new, displays_walls)
 
                 # pygame.draw.polygon(self.screen, self.wallColour,
                 #                     [wireframe.nodes_2d_throw[i][:2] for i in wall])
         pygame.draw.circle(self.screen, (255, 255, 255), (self.width / 2, self.height / 2), self.nodeRadius, 0)
+
+
+    def check_to_display_wall(self,wall_z, nodes_2d):
+        if np.all(wall_z < 0):
+            return False
+        if np.all(nodes_2d[:, 0] > self.width) or np.all(nodes_2d[:, 0] < 0):
+            return False
+        elif np.all(nodes_2d[:, 1] > self.height) or np.all(nodes_2d[:, 1] < 0):
+            return False
+        return True
+
+    def set_max_x_y_values(self,point_x,point_y):
+        if point_x > self.width * 2:
+            point_x = self.width * 2
+        elif point_x < -self.width :
+            point_x = -self.width
+
+        if point_y > self.height * 2:
+            point_y = self.height *2
+        elif point_y < -self.height:
+            point_y = -self.height
+        return point_x,point_y
 
     def translateAll(self, vector):
         matrix = translationMatrix(*vector)
