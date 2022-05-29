@@ -12,46 +12,27 @@ HEIGHT = 400
 MOVE_STEP = 100
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Wireframe Display')
+pygame.display.set_caption('Phong')
 
 pygame.font.init()  # you have to call this at the start,
-# if you want to use this module.
 
-
-# OBSERVER = np.array([200, 200, 0])
-# CENTER = np.array([200, 200, 200])
-# SOURCE = np.array([400, 400, 0])
-OBSERVER = (200, 200, 0)
-CENTER = (200, 200, 200)
-SOURCE = (400, 400, 0)
+OBSERVER = np.array([200, 200, 0])
+CENTER = np.array([200, 200, 200])
+SOURCE = np.array([200, 200, 0])
+# OBSERVER = (200, 200, 0)
+# CENTER = (200, 200, 200)
+# SOURCE = (400, 400, 0)
 
 RADIUS = 100
-
-
-def draw_cycle(x, y):
-    if x > CENTER[0] + RADIUS or x < CENTER[0] - RADIUS:
-        return False
-    elif y > CENTER[1] + RADIUS or y < CENTER[1] - RADIUS:
-        return False
-    return True
-
-
-def z_coord(x, y):
-    # a = 1 so it can be skipped
-    # if not draw_cycle(x,y):
-    #     return False
-    b = -2 * CENTER[2]
-    # (x - CENTER[0])**2 + (y - CENTER[1])**2  + z**2  - 2*z_0* *z + z_)**2
-
-    c = CENTER[2] ** 2 + (x - CENTER[0]) ** 2 + (y - CENTER[1]) ** 2 - RADIUS ** 2
-
-    delta = b ** 2 - 4 * c
-    if delta == 0:
-        return -b / 2
-    elif delta > 0:
-        z1 = (-b - math.sqrt(delta)) / 2
-        # z2 = (-b + math.sqrt(delta)) / 2
-        return z1
+Parametrs = {
+    'IA': 1,
+    'KA': 0.05,  # otoczenia
+    'IP': 1,
+    'KD': 0.5,  # rozproszonego
+    'KS': 0.5,  # odbitego
+    'N': 5
+}
+basic_color = [0, 0, 1]
 
 
 def z_coord_vectoring():
@@ -59,7 +40,7 @@ def z_coord_vectoring():
     # if not draw_cycle(x,y):
     #     return False
     points = np.array(list(itertools.product(range(WIDTH), range(HEIGHT))))
-    x = points[:,0]
+    x = points[:, 0]
     y = points[:, 1]
 
     z_coord = np.zeros(len(x))
@@ -70,19 +51,18 @@ def z_coord_vectoring():
     c = CENTER[2] ** 2 + (x - CENTER[0]) ** 2 + (y - CENTER[1]) ** 2 - RADIUS ** 2
     delta = b ** 2 - 4 * c
 
-    index_delta_0 = np.where(delta == 0)
-    z_coord[index_delta_0] = -b / 2
+    # index_delta_0 = np.where(delta == 0)
+    # z_coord[index_delta_0] = -b / 2
 
-    index_delta_bigger_0 = np.where(delta > 0)
+    index_delta_bigger_0 = np.where(delta >= 0)
     delta_sqrt = np.sqrt(delta[index_delta_bigger_0])
     z1 = (-b - delta_sqrt) / 2
     # z2 = (-b + delta_sqrt) / 2
 
     z_coord[index_delta_bigger_0] = z1
 
-    # z2 = (-b + delta_sqrt) / 2
-    # z_coord[index_delta_bigger_0] = np.min(np.vstack((z1, z2)), axis=0)
-    return np.vstack( (x,y, z_coord)).T.astype(int)
+    return np.vstack((x[index_delta_bigger_0], y[index_delta_bigger_0], z_coord[index_delta_bigger_0])).T.astype(int)
+
 
 def vector(start_point, end_point):
     return np.array([end_point[0] - start_point[0],
@@ -91,65 +71,58 @@ def vector(start_point, end_point):
 
 
 def norm(vector: np.array):
-    return math.sqrt(sum(vector ** 2))
+    return np.sqrt(np.sum(vector ** 2, axis=1))
 
 
 def versor(vector):
     n = norm(vector)
-    # n = np.linalg.norm(vector)
-    return vector / n
-
-
+    return vector / n.reshape(-1, 1)
 
 
 def illumination(point):
-    #
-    IA = 1
-    KA = 0.05  # otoczenia
+    n = versor(CENTER - point)
+    l = versor(point - SOURCE)
+    v = versor(point - OBSERVER)
 
-    IP = 1
-    KD = 0.5  # rozproszonego
+    r = versor((n * 2 * n * l) - l)
 
-    KS = 0.5  # odbitego
-    N = 5
+    n_l = np.max(np.vstack((np.sum(np.multiply(n, l), axis=1), np.zeros(len(n)))), axis=0)
 
-    n = versor(vector(CENTER, point))
-    # n = versor(CENTER - point)
+    r_v = np.max(np.vstack((np.sum(np.multiply(r, v), axis=1), np.zeros(len(n)))), axis=0)
 
-    l = versor(vector(point, SOURCE))
-    # l = versor( point - SOURCE)
-
-    v = versor(vector(point, OBSERVER))
-    # v = versor( point - OBSERVER)
-
-    r = versor(subtract(multiply(multiply(n, 2), multiply(n, l)), l))
-    # r = versor( ( n * 2 * n * l) -  l)
-
-    return IA * KA + IP * (KD * max(dot(n, l), 0) + KS * max(dot(r, v), 0) ** N)
+    return Parametrs['IA'] * Parametrs['KA'] + Parametrs['IP'] * (
+                Parametrs['KD'] * n_l + Parametrs['KS'] * r_v ** Parametrs['N'])
 
 
 def render():
     start = time.time()
-    for  x, y, z  in z_coord_vectoring():
-        # print(x,y,z)
-        if  z !=0:
-            intensity = min(  int(illumination([x, y, z]) * 255 ), 255)
-            # print(intensity)
-            color = multiply(intensity,(0,0,1))
-            # print(color)
-            # image.put('#{0:02x}{0:02x}{0:02x}'.format(intensity), coords)
-            pygame.draw.circle(screen, color,  (x,HEIGHT - y), 1, 0)
+    # print(x,y,z)
+    points = z_coord_vectoring()
 
-    print(time.time() - start)
+    intensity = np.min(np.vstack((illumination(points) * 255, np.ones((len(points))) * 255)), axis=0)
+    # print(intensity)
 
+    color = (intensity * np.array([0, 0, 1]).reshape(3, 1)).T
+    for i, point in enumerate(points):
+        pygame.draw.circle(screen, color[i], (point[0], HEIGHT - point[1]), 1, 0)
 
+    print(time.time() - start, SOURCE, Parametrs)
 
 
 def move(step, coord):
     global SOURCE
-    SOURCE = list(SOURCE)
+    # SOURCE = list(SOURCE)
     SOURCE[coord] += step
-    SOURCE = tuple(SOURCE)
+    # SOURCE = tuple(SOURCE)
+
+
+def update_parameters(pametr, step):
+    Parametrs[pametr] *= step
+    if Parametrs[pametr] < 0:
+        Parametrs[pametr] = 0
+    elif pametr !='N' and Parametrs[pametr] > 1:
+        Parametrs[pametr] = 1
+
 
 
 key_to_function = {
@@ -158,7 +131,15 @@ key_to_function = {
     pygame.K_a: lambda: move(-MOVE_STEP, 0),
     pygame.K_d: lambda: move(MOVE_STEP, 0),
     pygame.K_w: lambda: move(MOVE_STEP, 2),
-    pygame.K_s: lambda: move(-MOVE_STEP, 2)
+    pygame.K_s: lambda: move(-MOVE_STEP, 2),
+    pygame.K_n: lambda: update_parameters('N',2),
+    pygame.K_m: lambda: update_parameters('N', 1/2),
+    pygame.K_k: lambda: update_parameters('KA', 1.25),
+    pygame.K_l: lambda: update_parameters('KA', 0.75),
+    pygame.K_o: lambda: update_parameters('KD', 1.25),
+    pygame.K_p: lambda: update_parameters('KD', 0.75),
+    pygame.K_u: lambda: update_parameters('KS', 1.25),
+    pygame.K_i: lambda: update_parameters('KS', 0.75),
 }
 
 running = True
