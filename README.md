@@ -6,7 +6,7 @@ Both programs written in Python, using numpy vectoring for optimization.
 3-Camera
 ==================
 
-The first program is a 3-camera ditching between solids. To solve the problem of obfuscation, I first sort the walls by Z-coordinates and then check which wall is in front of which behind. Then I display them according to the assumption of the painting algorithm.
+TThe first program is a 3d camera moving between solids. To solve the obstruction problem I used the painting algorithm. First I sort the walls according to Z coordinates, then based on the plane equation I check which should be displayed first and which last.
 
 
 Sample views 
@@ -20,8 +20,7 @@ Sample views
 Phong's algorithm.
 ==================
 
-Illumination of the reflection of light from the sphere depends on the sphere's parameters and the intensity of light and angle of incidence.
-
+The second program displays the reflection of light from the sphere depends on the parameters of the sphere and the intensity of the light and the angle of incidence.
 Sample views 
 ===================
 
