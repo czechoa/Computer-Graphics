@@ -6,7 +6,7 @@ Both programs written in Python, using numpy vectoring for optimization.
 3-Camera
 ==================
 
-TThe first program is a 3d camera moving between solids. To solve the obstruction problem I used the painting algorithm. First I sort the walls according to Z coordinates, then based on the plane equation I check which should be displayed first and which last.
+The first program is a 3d camera moving between solids. To solve the obstruction problem I used the painting algorithm. First I sort the walls according to Z coordinates, then based on the plane equation I check which should be displayed first and which last.
 
 
 Sample views 
