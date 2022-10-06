@@ -1,64 +1,39 @@
 These are my programs for computer graphics in my third year of college.
 
-The first one is, a 3 d camera moving between solids. 
+Both programs written in Python, using numpy vectoring for optimization.
 
-Phong's algorithm.
+
+3-Camera
 ==================
 
-The second program is Phong's algorithm.
+The first program is a 3-camera ditching between solids. To solve the problem of obfuscation, I first sort the walls by Z-coordinates and then check which wall is in front of which behind. Then I display them according to the assumption of the painting algorithm.
+
 
 Sample views 
 ===================
 
-![image](data/dobrze_odbija.png)
+![image](image/3-camera_0.png)
 
-Projection and display
-=========================
+![image](image/3-camera_1.png)
 
-- I used simple orthogonal projection.
 
-- I determine the Z coordinate from the solution of the equation
-    of the square of the sphere
-    $((x-x_{0})^2 + (y-y_{0})^2 + (z-z_{0})^2 = r^2)$
-- $((x − x0)^2 + (y − y0)2 + (z − z0)2 = r2)$
-- The background is not refreshed.
-
-For each pixel that displays a sphere, it solves the equations
-phong:$$I=k_{a} \¢dot I_{a}+I_{i} \$$I = k_{d}({{vec {N}})+k_{s}}({{vec {R}}} \{{vec {V}^{n}})$$.
-
-- $k_{a} \I_{a}$ - ambient intensity.
-
-- $k_{d}$ - scattering coefficient
-
-- $k_{s}$ - reflection coefficient
-
-- $vec{N}$ - normal vector
-
-- $vec{L}$ - vector of point a of the source
-
-- $vec{V}$ - vector of point a of the observer
-
-Program activities
+Phong's algorithm.
 ==================
 
-- For each pixel, coordinate calculations Z of the sphere.
+Illumination of the reflection of light from the sphere depends on the sphere's parameters and the intensity of light and angle of incidence.
 
-- Only for each point from the sphere, calculation of light intensity (from the
-    phong formula).
+Sample views 
+===================
 
-- Display each pixel from the sphere, multiplied by its
-    phonga illumination.
-
-Testowanie
-==========
-
-![image](data/bardzo_dobrze_odbija.png)
-
-![image](data/dobrze_odbija.png)
-
-![image](data/słabo_odbija.png)
-
-![image](data/bardzo_slabo_odbija.png)
+![image](image/dobrze_odbija.png)
 
 
-Both programs written in Python, using numpy vectoring for optimization.
+![image](image/bardzo_dobrze_odbija.png)
+
+![image](image/dobrze_odbija.png)
+
+![image](image/słabo_odbija.png)
+
+![image](image/bardzo_slabo_odbija.png)
+
+
