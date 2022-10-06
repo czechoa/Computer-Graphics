@@ -1,6 +1,7 @@
 import numpy as np
-from matrix import rotateXMatrix, rotateYMatrix, rotateZMatrix
+
 from equation_of_plane import calculate_equation_of_plane, calculate_points_behind, calculate_points_forward
+from matrix import rotateXMatrix, rotateYMatrix, rotateZMatrix
 
 
 class Wireframe:
@@ -32,10 +33,10 @@ class Wireframe:
     def painter_algorithm(self):
 
         self.walls_z = np.sort(self.walls_z, axis=1, kind='stable')
-        #
+
         planes = np.array([calculate_equation_of_plane(*x) for x in self.nodes[self.walls[:, :3]][:, :, :3]], ).reshape(
             (len(self.walls), 4))
-        #
+
         points_behind_wall = -1 * np.array(
             [calculate_points_behind(plane.reshape(1, 4), self.nodes).sum() if calculate_points_forward(plane, np.array(
                 (0, 0, 0, 1)))
@@ -44,7 +45,7 @@ class Wireframe:
         to_sort = np.hstack((self.walls_z, points_behind_wall.reshape(-1, 1)))
 
         sorted_index = np.lexsort([to_sort[:, -i] for i in reversed(range(1, to_sort.shape[1] + 1))])[::-1]
-        #
+
         self.order_walls(sorted_index)
         self.bubble_sort()
 

@@ -1,11 +1,9 @@
-import math
-import time
-import tkinter
 import itertools
-from sklearn.preprocessing import normalize
+import time
+
 import numpy as np
 import pygame
-from numpy import multiply, subtract, dot
+from sklearn.preprocessing import normalize
 
 WIDTH = 400
 HEIGHT = 400

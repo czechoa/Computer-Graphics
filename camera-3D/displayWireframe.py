@@ -1,9 +1,8 @@
-import time
-import wireframe as wf
-import pygame
 import numpy as np
+import pygame
+
+import wireframe as wf
 from matrix import translationMatrix
-from pprint import pprint
 
 key_to_function = {
     pygame.K_LEFT: (lambda x: x.translateAll([10, 0, 0])),
@@ -33,7 +32,6 @@ class ProjectionViewer:
         pygame.display.set_caption('Wireframe Display')
 
         pygame.font.init()  # you have to call this at the start,
-        # if you want to use this module.
         self.font_size = 24
         self.my_font = pygame.font.SysFont('Comic Sans MS', self.font_size)
         self.texts = [self.my_font.render(x, False, (200, 0, 0)) for x in
@@ -63,8 +61,6 @@ class ProjectionViewer:
 
         running = True
         while running:
-            start = time.time()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -73,9 +69,6 @@ class ProjectionViewer:
                         key_to_function[event.key](self)
 
             self.display()
-            # for i, text in enumerate(self.texts):
-            #     self.screen.blit(text, (0, self.font_size * i))
-
             pygame.display.flip()
 
     def display(self):
@@ -87,42 +80,50 @@ class ProjectionViewer:
         self.displayWalls = True
 
         for wireframe in self.wireframes.values():
-            for i, node in enumerate(wireframe.nodes):
-                if node[2] > 0:
-                    point_x = int(node[0] * self.d / node[2]) + self.width / 2
-                    point_y = int(node[1] * self.d / node[2]) + self.height / 2
-                else:
-                    point_x = int(node[0] * self.d) + self.width / 2
-                    point_y = int(node[1] * self.d) + self.height / 2
-
-                point_x, point_y = self.set_max_x_y_values(point_x, point_y)
-
-                wireframe.nodes_2d_throw[i] = (point_x, point_y)
-
-                if self.displayNodes:
-                    pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
+            self.projection_onto_a_2d_surface_and_draw_nodes(wireframe)
 
             if self.displayEdges:
-                for n1, n2 in wireframe.edges:
-                    pygame.draw.aaline(self.screen, self.edgeColour, wireframe.nodes_2d_throw[n1][:2],
-                                       wireframe.nodes_2d_throw[n2][:2], 1)
-
-                    self.screen.blit(self.my_font.render(str(n1), False, (200, 0, 0)),
-                                     (wireframe.nodes_2d_throw[n1][:2]))
-                    self.screen.blit(self.my_font.render(str(n2), False, (200, 0, 0)),
-                                     (wireframe.nodes_2d_throw[n2][:2]))
+                self.display_edges(wireframe)
 
             if self.displayWalls:
-                displays_walls = 0
-                for id_color, wall in enumerate(wireframe.walls):
-                    if self.check_to_display_wall(wireframe.walls_z[id_color], wireframe.nodes_2d_throw[wall]):
-                        displays_walls += 1
-                        pygame.draw.polygon(self.screen, wireframe.walls_colors[id_color],
-                                            wireframe.nodes_2d_throw[wall])
+                self.display_walls(wireframe)
 
-                # pygame.draw.polygon(self.screen, self.wallColour,
-                #                     [wireframe.nodes_2d_throw[i][:2] for i in wall])
         pygame.draw.circle(self.screen, (255, 255, 255), (self.width / 2, self.height / 2), self.nodeRadius, 0)
+
+    def projection_onto_a_2d_surface_and_draw_nodes(self, wireframe):
+        for i, node in enumerate(wireframe.nodes):
+            if node[2] > 0:
+                point_x = int(node[0] * self.d / node[2]) + self.width / 2
+                point_y = int(node[1] * self.d / node[2]) + self.height / 2
+            else:
+                point_x = int(node[0] * self.d) + self.width / 2
+                point_y = int(node[1] * self.d) + self.height / 2
+
+            point_x, point_y = self.set_max_x_y_values(point_x, point_y)
+
+            wireframe.nodes_2d_throw[i] = (point_x, point_y)
+
+            if self.displayNodes:
+                pygame.draw.circle(self.screen, self.nodeColour, (point_x, point_y), self.nodeRadius, 0)
+
+    def display_edges(self, wireframe):
+
+        for n1, n2 in wireframe.edges:
+            pygame.draw.aaline(self.screen, self.edgeColour, wireframe.nodes_2d_throw[n1][:2],
+                               wireframe.nodes_2d_throw[n2][:2], 1)
+
+            self.screen.blit(self.my_font.render(str(n1), False, (200, 0, 0)),
+                             (wireframe.nodes_2d_throw[n1][:2]))
+            self.screen.blit(self.my_font.render(str(n2), False, (200, 0, 0)),
+                             (wireframe.nodes_2d_throw[n2][:2]))
+
+    def display_walls(self, wireframe):
+        displays_walls = 0
+        for id_color, wall in enumerate(wireframe.walls):
+            if self.check_to_display_wall(wireframe.walls_z[id_color], wireframe.nodes_2d_throw[wall]):
+                displays_walls += 1
+                pygame.draw.polygon(self.screen, wireframe.walls_colors[id_color],
+                                    wireframe.nodes_2d_throw[wall])
 
     def check_to_display_wall(self, wall_z, nodes_2d):
         if np.all(wall_z < 0):
@@ -176,35 +177,22 @@ if __name__ == '__main__':
 
     )
 
-    walls_0 = np.array([[0, 2, 6, 4],  # PRZEDNIA
-                        [3, 1, 5, 7],  # TYLNIA
+    walls_0 = np.array([[0, 2, 6, 4],  # front
+                        [3, 1, 5, 7],  # rear
 
-                        [2, 6, 7, 3],  # DOLNA
-                        [0, 4, 5, 1],  # gORNA
+                        [2, 6, 7, 3],  # bottom
+                        [0, 4, 5, 1],  # top
 
-                        [1, 3, 2, 0],  # LEWA
-                        [6, 7, 5, 4]  # PRAWA
+                        [1, 3, 2, 0],  # left
+                        [6, 7, 5, 4]  # right
                         ])
     walls_1 = walls_0 + 8
     walls = np.vstack((walls_0, walls_1))
 
     cube.add_walls(
-        # [[0, 2, 6, 4],  # PRZEDNIA
-        #  [3, 1, 5, 7],  # TYLNIA
-        #
-        #  [2, 6, 7, 3],  # DOLNA
-        #  [0, 4, 5, 1],  # gORNA
-        #
-        #  [1, 3, 2, 0],  # LEWA
-        #  [6, 7, 5, 4]  # PRAWA
-        #
-        #  ],
         walls,
-        # colors=[(255, 0, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
         colors=[(x, z, y) for x in (0, 125, 250) for y in (125, 250) for z in (0, 250)]
-
     )
 
     pv.addWireframe(f'cube', cube)
-
     pv.run()
