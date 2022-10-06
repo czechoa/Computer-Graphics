@@ -21,6 +21,7 @@ Phong's algorithm.
 ==================
 
 The second program displays the reflection of light from the sphere depends on the parameters of the sphere and the intensity of the light and the angle of incidence.
+
 Sample views 
 ===================
 
